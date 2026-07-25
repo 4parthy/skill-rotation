@@ -1,0 +1,9 @@
+{
+    "name": "skill-rotation",
+    "description": "Learning a skill rotation",
+    "author": "Junie",
+    "version": "1.0.0",
+    "dependencies": {
+        "tera-game-state": "*"
+    }
+}
