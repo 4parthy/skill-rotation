@@ -37,17 +37,9 @@ module.exports = function SkillRotation(mod) {
 
     mod.on('state-changed', update);
     
-    mod.hook('C_START_SKILL', 7, (event) => {
-        const skillId = event.skill.id;
-        const group = Math.floor(skillId / 10000);
-        
-        const usedSkill = config.find(s => Math.floor(s.id / 10000) === group);
-        if (usedSkill) {
-            if (engine.lastUsedSkills[0] !== usedSkill) {
-                engine.lastUsedSkills.unshift(usedSkill);
-                if (engine.lastUsedSkills.length > 3) engine.lastUsedSkills.pop();
-                update();
-            }
+    mod.on('skill-used', (group) => {
+        if (engine.skillUsed(group, config)) {
+            update();
         }
     });
 
