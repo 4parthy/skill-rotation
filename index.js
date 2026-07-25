@@ -19,6 +19,7 @@ class SkillRotation {
         this.ui = new UIHandler(mod);
 
         this.config = [];
+        this.enabled = true;
 
         this.events.on('state-changed', () => this.update());
         this.events.on('skill-used', (group) => {
@@ -26,6 +27,12 @@ class SkillRotation {
             if (this.engine.skillUsed(group, this.config)) {
                 this.update();
             }
+        });
+
+        mod.command.add('sk', () => {
+            this.enabled = !this.enabled;
+            this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}.`);
+            this.update();
         });
 
         mod.game.on('enter_game', () => {
@@ -66,7 +73,11 @@ class SkillRotation {
     }
 
     update() {
-        this.mod.log(`Updating rotation. In combat: ${this.state.inCombat}, Config size: ${this.config.length}`);
+        this.mod.log(`Updating rotation. In combat: ${this.state.inCombat}, Config size: ${this.config.length}, Enabled: ${this.enabled}`);
+        if (!this.enabled) {
+            this.ui.clear();
+            return;
+        }
         this.engine.update(this.config);
         this.ui.display(this.engine.currentRotation, this.engine.lastUsedSkills, this.state.inCombat);
     }
