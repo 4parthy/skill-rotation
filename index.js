@@ -47,14 +47,17 @@ class SkillRotation {
     loadConfig() {
         try {
             const class_name = this.me.class;
-            this.mod.log(`Loading config for class: ${class_name}`);
+            this.mod.log(`Detected class: ${class_name}`);
             if (class_name) {
                 const configPath = path.join(__dirname, 'config', `${class_name}.js`);
+                this.mod.log(`Attempting to load config: ${configPath}`);
                 const resolvedPath = require.resolve(configPath);
                 delete require.cache[resolvedPath];
                 this.config = require(resolvedPath);
-                this.mod.log(`Loaded rotation for ${class_name}`);
+                this.mod.log(`Successfully loaded rotation for ${class_name}`);
                 this.update();
+            } else {
+                this.mod.warn('Could not determine character class. Is the player logged in?');
             }
         } catch (e) {
             this.mod.warn(`No rotation config found for class ${this.me.class}: ${e.message}`);
