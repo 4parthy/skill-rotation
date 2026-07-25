@@ -1,49 +1,57 @@
 'use strict';
 
 const path = require('path');
+const EventEmitter = require('events');
 const StateTracker = require('./lib/state-tracker');
 const RotationEngine = require('./lib/rotation-engine');
 const UIHandler = require('./lib/ui-handler');
 
-module.exports = function SkillRotation(mod) {
-    const { me } = mod.require['tera-game-state'];
+class SkillRotation {
+    constructor(mod) {
+        this.mod = mod;
+        this.events = new EventEmitter();
 
-    const state = new StateTracker(mod);
-    const engine = new RotationEngine(mod, state);
-    const ui = new UIHandler(mod);
+        const { me } = mod.require['tera-game-state'];
+        this.me = me;
 
-    let config = [];
+        this.state = new StateTracker(mod, this.events);
+        this.engine = new RotationEngine(mod, this.state, this.events);
+        this.ui = new UIHandler(mod);
 
-    function loadConfig() {
+        this.config = [];
+
+        this.events.on('state-changed', () => this.update());
+        this.events.on('skill-used', (group) => {
+            if (this.engine.skillUsed(group, this.config)) {
+                this.update();
+            }
+        });
+
+        mod.game.on('enter_game', () => this.loadConfig());
+        if (mod.game.me.inGame) this.loadConfig();
+    }
+
+    loadConfig() {
         try {
-            const class_name = me.class;
+            const class_name = this.me.class;
             if (class_name) {
                 const configPath = path.join(__dirname, 'config', `${class_name}.js`);
                 const resolvedPath = require.resolve(configPath);
                 delete require.cache[resolvedPath];
-                config = require(resolvedPath);
-                mod.log(`Loaded rotation for ${class_name}`);
-                update();
+                this.config = require(resolvedPath);
+                this.mod.log(`Loaded rotation for ${class_name}`);
+                this.update();
             }
         } catch (e) {
-            mod.warn(`No rotation config found for class ${me.class}: ${e.message}`);
-            config = [];
+            this.mod.warn(`No rotation config found for class ${this.me.class}: ${e.message}`);
+            this.config = [];
         }
     }
 
-    function update() {
-        engine.update(config);
-        ui.display(engine.currentRotation, engine.lastUsedSkills, state.inCombat);
+    update() {
+        this.engine.update(this.config);
+        this.ui.display(this.engine.currentRotation, this.engine.lastUsedSkills, this.state.inCombat);
     }
+}
 
-    mod.on('state-changed', update);
-    
-    mod.on('skill-used', (group) => {
-        if (engine.skillUsed(group, config)) {
-            update();
-        }
-    });
-
-    mod.game.on('enter_game', loadConfig);
-    if (mod.game.me.inGame) loadConfig();
-};
+module.exports = { NetworkMod: SkillRotation };
