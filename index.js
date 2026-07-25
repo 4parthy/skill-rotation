@@ -19,13 +19,14 @@ module.exports = function SkillRotation(mod) {
             const class_name = me.class;
             if (class_name) {
                 const configPath = path.join(__dirname, 'config', `${class_name}.js`);
-                delete require.cache[require.resolve(configPath)];
-                config = require(configPath);
+                const resolvedPath = require.resolve(configPath);
+                delete require.cache[resolvedPath];
+                config = require(resolvedPath);
                 mod.log(`Loaded rotation for ${class_name}`);
                 update();
             }
         } catch (e) {
-            mod.warn(`No rotation config found for class ${me.class}`);
+            mod.warn(`No rotation config found for class ${me.class}: ${e.message}`);
             config = [];
         }
     }
