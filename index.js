@@ -57,14 +57,24 @@ class SkillRotation {
                 if (name === 'default') {
                     delete this.rotation[class_name];
                     this.mod.command.message(`Reset to default rotation for ${class_name}.`);
+                    if (this.mod.settings) {
+                        this.mod.settings.rotation = this.rotation;
+                    }
+                    this.loadConfig();
                 } else {
-                    this.rotation[class_name] = name;
-                    this.mod.command.message(`Set custom rotation for ${class_name}: ${name}`);
+                    const configPath = path.join(__dirname, 'config', `${name}.js`);
+                    try {
+                        require.resolve(configPath);
+                        this.rotation[class_name] = name;
+                        this.mod.command.message(`Set custom rotation for ${class_name}: ${name}`);
+                        if (this.mod.settings) {
+                            this.mod.settings.rotation = this.rotation;
+                        }
+                        this.loadConfig();
+                    } catch (e) {
+                        this.mod.command.message(`Error: Configuration file "${name}.js" not found in config directory.`);
+                    }
                 }
-                if (this.mod.settings) {
-                    this.mod.settings.rotation = this.rotation;
-                }
-                this.loadConfig();
             }
         });
 
