@@ -1,7 +1,7 @@
 {
     "name": "skill-rotation",
-    "description": "Learning a skill rotation",
-    "author": "Junie",
+    "description": "Display a dynamic skill rotation",
+    "author": "4parthy, Junie",
     "version": "1.0.0",
     "dependencies": {
         "tera-game-state": "*"

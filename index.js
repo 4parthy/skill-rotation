@@ -19,7 +19,8 @@ class SkillRotation {
         this.ui = new UIHandler(mod);
 
         this.config = [];
-        this.enabled = true;
+        this.enabled = (this.mod.settings && this.mod.settings.enabled !== false);
+        this.customConfigs = (this.mod.settings && this.mod.settings.customConfigs) || {};
 
         this.events.on('state-changed', () => {
             if (this.state.inCombat) {
@@ -33,10 +34,38 @@ class SkillRotation {
             }
         });
 
-        mod.command.add('sk', () => {
-            this.enabled = !this.enabled;
-            this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}.`);
-            this.update();
+        mod.command.add('sr', {
+            '$none': () => {
+                this.enabled = !this.enabled;
+                if (this.mod.settings) {
+                    this.mod.settings.enabled = this.enabled;
+                }
+                this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}.`);
+                this.update();
+            },
+            'rotation': (name) => {
+                if (!name) {
+                    this.mod.command.message('Usage: sr rotation <filename|default>');
+                    return;
+                }
+                const class_name = this.me.class;
+                if (!class_name) {
+                    this.mod.command.message('Error: Could not determine class.');
+                    return;
+                }
+
+                if (name === 'default') {
+                    delete this.customConfigs[class_name];
+                    this.mod.command.message(`Reset to default rotation for ${class_name}.`);
+                } else {
+                    this.customConfigs[class_name] = name;
+                    this.mod.command.message(`Set custom rotation for ${class_name}: ${name}`);
+                }
+                if (this.mod.settings) {
+                    this.mod.settings.customConfigs = this.customConfigs;
+                }
+                this.loadConfig();
+            }
         });
 
         mod.game.on('enter_game', () => {
@@ -60,12 +89,13 @@ class SkillRotation {
             const class_name = this.me.class;
             this.mod.log(`Detected class: ${class_name}`);
             if (class_name) {
-                const configPath = path.join(__dirname, 'config', `${class_name}.js`);
+                const configName = this.customConfigs[class_name] || class_name;
+                const configPath = path.join(__dirname, 'config', `${configName}.js`);
                 this.mod.log(`Attempting to load config: ${configPath}`);
                 const resolvedPath = require.resolve(configPath);
                 delete require.cache[resolvedPath];
                 this.config = require(resolvedPath);
-                this.mod.log(`Successfully loaded rotation for ${class_name}`);
+                this.mod.log(`Successfully loaded rotation for ${class_name} (config: ${configName})`);
                 this.update();
             } else {
                 this.mod.warn('Could not determine character class. Is the player logged in?');
