@@ -21,16 +21,26 @@ class SkillRotation {
         this.config = [];
         this.enabled = (this.mod.settings && this.mod.settings.enabled !== false);
         this.rotation = (this.mod.settings && this.mod.settings.rotation) || {};
+        this.recentSkillUses = new Map();
+        this.skillUseDedupeMs = 500;
 
         this.events.on('state-changed', () => {
-            if (this.state.inCombat) {
-                this.update();
-            }
+            this.update();
         });
-        this.events.on('skill-used', (group) => {
-            this.mod.log(`Skill used: ${group}`);
+        this.events.on('skill-used', (group, skill, source = 'unknown') => {
+            if (group == null) {
+                this.mod.log(`Skill use observed (${source}) without a usable group: ${this.engine.describeSkill(skill)}`);
+                return;
+            }
+
+            const now = Date.now();
+            const lastSeen = this.recentSkillUses.get(group) || 0;
+            if (now - lastSeen < this.skillUseDedupeMs) return;
+            this.recentSkillUses.set(group, now);
+
+            this.mod.log(`Skill used (${source}): group=${group}, ${this.engine.describeSkill(skill)}`);
             if (this.engine.skillUsed(group, this.config)) {
-                this.update();
+                this.update(true);
             }
         });
 
@@ -108,6 +118,7 @@ class SkillRotation {
                 delete require.cache[resolvedPath];
                 this.config = require(resolvedPath);
                 this.mod.log(`Successfully loaded rotation for ${class_name} (config: ${configName})`);
+                this.mod.log(`Active rotation skills: ${this.config.map(skill => `${skill.name} (${this.engine.describeSkill(skill)})`).join(', ')}`);
                 this.update();
             } else {
                 this.mod.warn('Could not determine character class. Is the player logged in?');
@@ -118,14 +129,14 @@ class SkillRotation {
         }
     }
 
-    update() {
-        this.mod.log(`Updating rotation. In combat: ${this.state.inCombat}, Config size: ${this.config.length}, Enabled: ${this.enabled}`);
+    update(force = false) {
+        this.mod.log(`Updating rotation. In combat: ${this.state.inCombat}, Config size: ${this.config.length}, Enabled: ${this.enabled}, Force: ${force}`);
         if (!this.enabled) {
             this.ui.clear();
             return;
         }
         this.engine.update(this.config);
-        this.ui.display(this.engine.currentRotation, this.engine.lastUsedSkills, this.state.inCombat);
+        this.ui.display(this.engine.currentRotation, this.engine.lastUsedSkills, this.state.inCombat, force);
     }
 }
 
