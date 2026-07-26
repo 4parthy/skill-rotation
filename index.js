@@ -20,7 +20,7 @@ class SkillRotation {
 
         this.config = [];
         this.enabled = (this.mod.settings && this.mod.settings.enabled !== false);
-        this.customConfigs = (this.mod.settings && this.mod.settings.customConfigs) || {};
+        this.rotation = (this.mod.settings && this.mod.settings.rotation) || {};
 
         this.events.on('state-changed', () => {
             if (this.state.inCombat) {
@@ -43,11 +43,11 @@ class SkillRotation {
                 this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}.`);
                 this.update();
             },
-            'rotation': (name) => {
-                if (!name) {
-                    this.mod.command.message('Usage: sr rotation <filename|default>');
-                    return;
-                }
+            'reload': () => {
+                this.loadConfig();
+                this.mod.command.message('Rotation reloaded.');
+            },
+            '$default': (name) => {
                 const class_name = this.me.class;
                 if (!class_name) {
                     this.mod.command.message('Error: Could not determine class.');
@@ -55,14 +55,14 @@ class SkillRotation {
                 }
 
                 if (name === 'default') {
-                    delete this.customConfigs[class_name];
+                    delete this.rotation[class_name];
                     this.mod.command.message(`Reset to default rotation for ${class_name}.`);
                 } else {
-                    this.customConfigs[class_name] = name;
+                    this.rotation[class_name] = name;
                     this.mod.command.message(`Set custom rotation for ${class_name}: ${name}`);
                 }
                 if (this.mod.settings) {
-                    this.mod.settings.customConfigs = this.customConfigs;
+                    this.mod.settings.rotation = this.rotation;
                 }
                 this.loadConfig();
             }
@@ -89,7 +89,7 @@ class SkillRotation {
             const class_name = this.me.class;
             this.mod.log(`Detected class: ${class_name}`);
             if (class_name) {
-                const configName = this.customConfigs[class_name] || class_name;
+                const configName = this.rotation[class_name] || class_name;
                 const configPath = path.join(__dirname, 'config', `${configName}.js`);
                 this.mod.log(`Attempting to load config: ${configPath}`);
                 const resolvedPath = require.resolve(configPath);
