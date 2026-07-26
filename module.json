@@ -1,6 +1,7 @@
 {
+    "servers": ["https://github.com/4parthy/skill-rotation"],
     "name": "skill-rotation",
-    "description": "Display a dynamic skill rotation",
+    "description": "Display next skills to use from configured skill rotation",
     "author": "4parthy, Junie",
     "version": "1.0.0",
     "dependencies": {
