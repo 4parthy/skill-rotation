@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const EventEmitter = require('events');
+const berserkerConfig = require('../config/berserker');
 const RotationEngine = require('../lib/rotation-engine');
 
 function createEngine() {
@@ -40,24 +41,14 @@ function createEngine() {
     };
 }
 
-function skill(name, group) {
-    return {
-        name,
-        id: group * 10000 + 100
-    };
-}
-
 function names(rotation) {
     return rotation.map(s => s.name);
 }
 
-const config = [
-    skill('Thunder Strike', 2),
-    skill('Cyclone', 3),
-    skill('Vampiric Blow', 4),
-    skill('Lethal Strike', 10),
-    skill('Raze', 21)
-];
+const config = berserkerConfig;
+const groups = config.map(skill => Math.floor(skill.id / 10000));
+
+assert.deepStrictEqual(groups, [3, 10, 15, 18, 25]);
 
 const { engine, hooks, logs, readiness, skillUses } = createEngine();
 
@@ -70,32 +61,44 @@ assert.deepStrictEqual(names(engine.currentRotation), [
 ]);
 
 // Using another tracked skill must not consume the currently expected step.
-assert.strictEqual(engine.skillUsed(3, config), true);
+assert.strictEqual(engine.skillUsed(10, config), true);
 engine.update(config);
 assert.strictEqual(engine.currentRotation[0].name, 'Thunder Strike');
-assert(logs.some(message => message.includes('Kept rotation position: expected group 2, observed tracked group 3')));
+assert(logs.some(message => message.includes('Kept rotation position: expected group 3, observed tracked group 10')));
 
-assert.strictEqual(engine.skillUsed(2, config), true);
+assert.strictEqual(engine.skillUsed(3, config), true);
 engine.update(config);
 assert.strictEqual(engine.currentRotation[0].name, 'Cyclone');
 
-assert.strictEqual(engine.skillUsed(3, config), true);
-engine.update(config);
-assert.strictEqual(engine.currentRotation[0].name, 'Vampiric Blow');
-
 assert.strictEqual(engine.skillUsed(10, config), true);
 engine.update(config);
 assert.strictEqual(engine.currentRotation[0].name, 'Vampiric Blow');
 
-assert.strictEqual(engine.skillUsed(4, config), true);
+assert.strictEqual(engine.skillUsed(18, config), true);
+engine.update(config);
+assert.strictEqual(engine.currentRotation[0].name, 'Vampiric Blow');
+
+assert.strictEqual(engine.skillUsed(15, config), true);
 engine.update(config);
 assert.strictEqual(engine.currentRotation[0].name, 'Lethal Strike');
 
-// Non-cooldown conditions can still make an unavailable skill get skipped.
-readiness.set(21, false);
-assert.strictEqual(engine.skillUsed(10, config), true);
+assert.strictEqual(engine.skillUsed(18, config), true);
+engine.update(config);
+assert.strictEqual(engine.currentRotation[0].name, 'Raze');
+
+assert.strictEqual(engine.skillUsed(3, config), true);
+engine.update(config);
+assert.strictEqual(engine.currentRotation[0].name, 'Raze');
+
+assert.strictEqual(engine.skillUsed(25, config), true);
 engine.update(config);
 assert.strictEqual(engine.currentRotation[0].name, 'Thunder Strike');
+
+// Non-cooldown conditions can still make an unavailable skill get skipped.
+readiness.set(10, false);
+assert.strictEqual(engine.skillUsed(3, config), true);
+engine.update(config);
+assert.strictEqual(engine.currentRotation[0].name, 'Vampiric Blow');
 
 assert.strictEqual(engine.skillUsed(99, config), false);
 assert(logs.some(message => message.includes('Used skill group 99 is not tracked by the active rotation config.')));
@@ -105,10 +108,10 @@ assert(clientStartHook);
 assert.strictEqual(clientStartHook.options.order, -10000);
 assert.deepStrictEqual(clientStartHook.options.filter, { fake: null, modified: null, silenced: null });
 
-clientStartHook.callback({ skill: { id: 40930 } });
+clientStartHook.callback({ skill: { id: 150930 } });
 assert.deepStrictEqual(skillUses, [{
-    group: 4,
-    skill: { id: 40930 },
+    group: 15,
+    skill: { id: 150930 },
     source: 'client-start'
 }]);
 
