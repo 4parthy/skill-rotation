@@ -40,7 +40,9 @@ class SkillRotation {
                 if (this.mod.settings) {
                     this.mod.settings.enabled = this.enabled;
                 }
-                this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}.`);
+                const class_name = this.me.class;
+                const configName = class_name ? (this.rotation[class_name] || class_name) : 'none';
+                this.mod.command.message(`Skill Rotation mod ${this.enabled ? 'enabled' : 'disabled'}. Current rotation: ${configName}`);
                 this.update();
             },
             'reload': () => {
