@@ -21,7 +21,11 @@ class SkillRotation {
         this.config = [];
         this.enabled = true;
 
-        this.events.on('state-changed', () => this.update());
+        this.events.on('state-changed', () => {
+            if (this.state.inCombat) {
+                this.update();
+            }
+        });
         this.events.on('skill-used', (group) => {
             this.mod.log(`Skill used: ${group}`);
             if (this.engine.skillUsed(group, this.config)) {
