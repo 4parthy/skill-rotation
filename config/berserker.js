@@ -21,5 +21,9 @@ module.exports = [
     {
         name: 'Raze',
         id: 250100 // Group 25
-    }
+    },
+    {
+        name: 'Flatten',
+        id: 290100 // Group 29
+    },
 ];
