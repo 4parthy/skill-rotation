@@ -1,5 +1,5 @@
 {
-    "servers": ["https://github.com/4parthy/skill-rotation"],
+    "servers": ["https://github.com/4parthy/skill-rotation/"],
     "name": "skill-rotation",
     "description": "Display next skills to use from configured skill rotation",
     "author": "4parthy, Junie",
